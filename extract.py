@@ -16,7 +16,8 @@ def bytes_to_int(byte_data):
 
 # This takes the bytes of the ubyte image file and first finds the total number
 # of images to extract. 
-def get_images_array(image_bytes):
+def get_images_array(image_filename):
+        image_bytes = read_bytes(image_filename)
         images = []
         num_images = bytes_to_int(image_bytes[4 : 8])
         rows = bytes_to_int(image_bytes[8 : 12])
@@ -26,7 +27,8 @@ def get_images_array(image_bytes):
         return images
 
 # Get the labels corresponding to the images 
-def get_labels(label_bytes):
+def get_labels(label_filename):
+        label_bytes = read_bytes(label_filename)
         num_labels = bytes_to_int(label_bytes[4 : 8])
         labels = [[0 for i in range(10)] for j in range(num_labels)]
         for i in range(num_labels):
