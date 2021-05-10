@@ -25,7 +25,7 @@ class NeuralNetwork:
          self.weights = weights
          self.biases = biases
 
-   # gives the weight and bias a value, if none provided
+   # gives the weight and bias a value, if no wb_filename provided
    def randomize(self):
       w = []
       b = []
@@ -50,9 +50,9 @@ class NeuralNetwork:
       return current_layer
 
    def train(self, data, batch_size = 1, eta = .01):
-      inputs, outputs = data
-      print(inputs[0])
-      print(outputs[0])
+      inputs, desired_outputs = data
+      print(inputs[0].reshape(28, 28))
+      print(desired_outputs[0])
 
 
    # Override f with a lambda expression

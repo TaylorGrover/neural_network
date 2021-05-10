@@ -1,7 +1,6 @@
 import json
 import numpy as np
 import os
-import sympy as sp
 
 # Big Endian byte storage conversion from bytecode to decimal integer 
 ### Obsolete since int.from_bytes(bytes, byteorder = "big", signed = False) 

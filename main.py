@@ -1,5 +1,5 @@
 import numpy as np
-np.set_printoptions(linewidth=100)
+np.set_printoptions(linewidth=200)
 from extract import *
 from neural_network import NeuralNetwork
 
@@ -9,7 +9,7 @@ np.random.seed(1)
 def sigmoid(z):
    return 1 / (np.exp(-z) + 1)
 
-# Differential equation x(1 - x)
+# Differential equation x' = x(1 - x)
 def deriv(x):
    return x * (1 - x)
 
@@ -26,11 +26,10 @@ training_labels_filename = "train-labels-idx1-ubyte"
 training_images = get_images_array(directory + training_image_filename)
 training_labels = get_labels(directory + training_labels_filename)
 
-# this code alone is worth MILLIONS
+# Create a neural network to read the image inputs from 
 test_network = NeuralNetwork([784, 15, 10])
 test_network.f = sigmoid
 test_network.fp = deriv
-
 
 test_network.train([training_images, training_labels])
 
