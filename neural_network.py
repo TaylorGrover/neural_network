@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import os
+import time
 
 # wb_filename is a JSON file containing the weights and biases
 class NeuralNetwork:
@@ -36,7 +37,7 @@ class NeuralNetwork:
       self.biases = b
 
    # Forward feed the input data into the network. x is the input layer
-   def feed(self, x, training = False, eta = .01):
+   def feed(self, x, training = False):
       current_layer = np.array(x)
       # BIG FUNCTIONALITY BIG GRADIENT DESCENT BIG BACKPROPAGATION
       if training:
@@ -49,11 +50,45 @@ class NeuralNetwork:
             current_layer = self.f(np.dot(current_layer, self.weights[i]) + self.biases[i])
       return current_layer
 
-   def train(self, data, batch_size = 1, eta = .01):
+   # x, y = data, where x is training inputs and y is the set of corresponding desired outputs. 
+   # datum
+   def train(self, data, epochs = 1, batch_size = 1, eta = .01):
+      batches = self._get_batches(data, batch_size)
+      print(len(batches[0]))
+      for i in range(epochs):
+         for batch in batches:
+            delta_L = 0
+            for datum in batch:
+               cur_input, des_output = datum
+               delta_L += self.feed(cur_input, training = True) - des_output
+            delta_L /= len(batch)
+            delta_L *= self.fp(self.layers[-1])
+            print(delta_L)
+      # Save weights and biases after training
+      self.save_wb(self._generate_filename())
+      
+   
+   def _get_batches(self, data, batch_size):
       inputs, desired_outputs = data
-      print(inputs[0].reshape(28, 28))
-      print(desired_outputs[0])
+      full_batch = []
+      length = len(inputs)
+      for i in range(length):
+         full_batch.append((inputs[i], desired_outputs[i]))
+      np.random.shuffle(full_batch)
+      batches = []
+      for i in range(length):
+         if i % batch_size == 0:
+            batches.append([])
+         batches[i // batch_size].append(full_batch[i])
+      return batches
 
+   def _generate_filename(self):
+      time_struct = time.localtime()
+      name = ""
+      for i in range(6):
+         name += str(time_struct[i]) + "_"
+      name += "wb.json"
+      return name
 
    # Override f with a lambda expression
    def f(self, x):

@@ -6,6 +6,9 @@ from neural_network import NeuralNetwork
 # Use fixed random seed FOR TESTING
 np.random.seed(1)
 
+# Boolean for training
+is_training = True
+
 def sigmoid(z):
    return 1 / (np.exp(-z) + 1)
 
@@ -21,17 +24,27 @@ wb_test_filename = "test_wb.json"
 directory = "data/"
 training_image_filename = "train-images-idx3-ubyte"
 training_labels_filename = "train-labels-idx1-ubyte"
-
-# GET THE IMAGE DATA AND LABELS
-training_images = get_images_array(directory + training_image_filename)
-training_labels = get_labels(directory + training_labels_filename)
+testing_image_filename = "t10k-images-idx3-ubyte"
+testing_labels_filename = "t10k-labels-idx1-ubyte"
 
 # Create a neural network to read the image inputs from 
 test_network = NeuralNetwork([784, 15, 10])
 test_network.f = sigmoid
 test_network.fp = deriv
 
-test_network.train([training_images, training_labels])
+
+if(is_training):
+   # GET THE IMAGE DATA AND LABELS
+   training_images = get_images_array(directory + training_image_filename)
+   training_labels = get_labels(directory + training_labels_filename)
+
+   # Training the neetwork
+   test_network.train([training_images, training_labels], batch_size = 20)
+else:
+   # GET THE TESTING IMAGE DATA AND LABELS
+
+   # Test the data
+   pass
 
 # 1
 # 2 
