@@ -38,14 +38,14 @@ if(is_training):
    training_images = get_images_array(directory + training_image_filename)
    training_labels = get_labels(directory + training_labels_filename)
 
-   # Training the neetwork
+   # Training the network
    test_network.train([training_images, training_labels], batch_size = 20)
 else:
    # GET THE TESTING IMAGE DATA AND LABELS
 
    # Test the data
    pass
-
+# hello
 # 1
 # 2 
 # 3

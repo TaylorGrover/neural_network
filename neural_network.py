@@ -57,12 +57,10 @@ class NeuralNetwork:
       print(len(batches[0]))
       for i in range(epochs):
          for batch in batches:
-            delta_L = 0
-            for datum in batch:
-               cur_input, des_output = datum
-               delta_L += self.feed(cur_input, training = True) - des_output
-            delta_L /= len(batch)
-            delta_L *= self.fp(self.layers[-1])
+            delta_w, delta_b = self.backprop(batch)
+            self.weights -= eta * delta_w
+            self.biases -= eta * delta_b
+
             print(delta_L)
       # Save weights and biases after training
       self.save_wb(self._generate_filename())
