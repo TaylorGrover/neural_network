@@ -74,7 +74,7 @@ class NeuralNetwork:
 
    # x, y = data, where x is training inputs and y is the set of corresponding desired outputs. 
    # datum
-   def train(self, data, epochs = 1, batch_size = 48, eta = .001, show_cost_deriv = False):
+   def train(self, data, epochs = 1, batch_size = 48, eta = .001, show_stats = False):
       self.delta_w, self.delta_b = self._init_deltas()
       self.item_count = 0
       self.success_count = 0
@@ -87,7 +87,7 @@ class NeuralNetwork:
                self.delta_w = [w + wn for w, wn in zip(self.delta_w, dw)]
                self.delta_b = [b + bn for b, bn in zip(self.delta_b, db)]
             self._update_wb(eta, len(batch))
-            if show_cost_deriv:
+            if show_stats:
                self.print_output(item)
       # Save weights and biases after training
       self.save_wb(self._generate_filename())
