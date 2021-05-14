@@ -26,7 +26,7 @@ testing_image_filename = "t10k-images-idx3-ubyte"
 testing_labels_filename = "t10k-labels-idx1-ubyte"
 
 # Create a neural network to read the image inputs from 
-test_network = NeuralNetwork([784, 150, 150, 10])
+test_network = NeuralNetwork([784, 80, 50, 10])
 
 if(len(sys.argv) == 1):
 

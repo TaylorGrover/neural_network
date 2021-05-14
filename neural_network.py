@@ -76,6 +76,8 @@ class NeuralNetwork:
    # datum
    def train(self, data, epochs = 1, batch_size = 48, eta = .001, show_cost_deriv = False):
       self.delta_w, self.delta_b = self._init_deltas()
+      self.item_count = 0
+      self.success_count = 0
       for i in range(epochs):
          print("Epoch: %d" % i)
          batches = self._get_batches(data, batch_size)
@@ -106,9 +108,10 @@ class NeuralNetwork:
       return self.feed(x) - y
 
    def print_output(self, item):
-      print("\nActual: " + repr(self.layers[-1]))
-      print("Desired: " + repr(item[1]) + "\n")
-      
+      if np.array_equal(np.round(self.layers[-1]), item[1]):
+         self.success_count += 1
+      self.item_count += 1
+      print("Accuracy: %.3f" % (self.success_count / self.item_count))
    """ 
    For each weight matrix and bias vector in self.weights and self.biases,
    compute the gradient of C with respect to the current weights and biases with
