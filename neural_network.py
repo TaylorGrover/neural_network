@@ -111,7 +111,7 @@ class NeuralNetwork:
       if np.array_equal(np.round(self.layers[-1]), item[1]):
          self.success_count += 1
       self.item_count += 1
-      print("Accuracy: %.3f" % (self.success_count / self.item_count))
+      print("Correct: %d\tTotal: %d\tCorrect/Total: %.3f" % (self.success_count, self.item_count, self.success_count / self.item_count))
    """ 
    For each weight matrix and bias vector in self.weights and self.biases,
    compute the gradient of C with respect to the current weights and biases with
