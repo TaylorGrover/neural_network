@@ -22,7 +22,8 @@ def get_images_array(image_filename):
         rows = bytes_to_int(image_bytes[8 : 12])
         cols = bytes_to_int(image_bytes[12 : 16])
         for i in range(num_images):
-                images.append(np.array(bytearray(image_bytes[16 + i * rows * cols : 16 + rows * cols * (i + 1)])) / 255)
+                images.append(np.array(bytearray(image_bytes[16 + i * rows * cols : 16 + rows * cols * (i + 1)])) / 255) 
+        print(images[0])
         return images
 
 # Get the labels corresponding to the images 

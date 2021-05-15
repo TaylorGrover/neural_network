@@ -1,11 +1,13 @@
+from activ_functions import *
 import json
 import numpy as np
 import os
+import sys
 import time
 
 # wb_filename is a JSON file containing the weights and biases
 class NeuralNetwork:
-   def __init__(self, layer_heights = [], wb_filename = ""):
+   def __init__(self, layer_heights = [], activations = [], wb_filename = ""):
       self.layer_heights = layer_heights
       self.layer_count = len(self.layer_heights)
       self.wb_filename = wb_filename
@@ -14,6 +16,7 @@ class NeuralNetwork:
       else:
          self.randomize()
       self.layers = [[] for i in range(self.layer_count)]
+      self._get_activations(activations)
 
    # Reads the saved weights and biases from a file
    def set_wb(self, filename):
@@ -38,19 +41,12 @@ class NeuralNetwork:
 
    """
    x is a vector (array/list)
-   if training, then the network saves the activation layers
    """
-   def feed(self, x, training = False):
+   def feed(self, x):
       current_layer = np.array(x)
-      if training:
-         self.layers[0] = current_layer
-         for i in range(self.layer_count - 1):
-            current_layer = self.f(np.dot(current_layer, self.weights[i]) + self.biases[i])
-            self.layers[i + 1] = current_layer
-      else:
-         for i in range(self.layer_count - 1):
-            current_layer = self.f(np.dot(current_layer, self.weights[i]) + self.biases[i])
-         return current_layer
+      for i in range(self.layer_count - 1):
+         current_layer = self.f[i](np.dot(current_layer, self.weights[i]) + self.biases[i])
+      return current_layer
 
    def test(self, data, cost_threshold, iterations):
       total_correct = 0
@@ -62,15 +58,23 @@ class NeuralNetwork:
             total_correct += 1
       return total_correct / len(data)
 
-
-   def f(self, z):
-      return 1 / (np.exp(-z) + 1)
-   
-   """
-   fp should be written as a differential equation in terms of the output of f
-   """
-   def fp(self, y):
-      return y * (1 - y)
+   def _get_activations(self, activations):
+      self.f = []
+      self.fp = []
+      if "relu" in activations:
+         for i in range(self.layer_count - 2):
+            self.f.append(relu)
+            self.fp.append(relu_deriv)
+      else:
+         for i in range(self.layer_count - 2):
+            self.f.append(sigmoid)
+            self.fp.append(sigmoid_deriv)
+      if "softargmax" in activations:
+         self.f.append(softargmax)
+         self.fp.append(sigmoid_deriv)
+      else:
+         self.f.append(sigmoid)
+         self.fp.append(sigmoid_deriv)
 
    # x, y = data, where x is training inputs and y is the set of corresponding desired outputs. 
    # datum
@@ -81,52 +85,53 @@ class NeuralNetwork:
       for i in range(epochs):
          print("Epoch: %d" % i)
          batches = self._get_batches(data, batch_size)
-         for batch in batches:
-            for item in batch:
-               dw, db = self.backprop(item)
-               self.delta_w = [w + wn for w, wn in zip(self.delta_w, dw)]
-               self.delta_b = [b + bn for b, bn in zip(self.delta_b, db)]
-            self._update_wb(eta, len(batch))
+         for item_input, desired_output in zip(*batches):
+            self.delta_w, self.delta_b = self.backprop(item_input, desired_output)
+            #self.delta_w = [w + wn for w, wn in zip(self.delta_w, dw)]
+            #self.delta_b = [b + bn for b, bn in zip(self.delta_b, db)]
+            self._update_wb(eta, len(item_input))
             if show_stats:
-               self.print_output(item)
+               self.print_output(desired_output)
       # Save weights and biases after training
       self.save_wb(self._generate_filename())
 
+   """
+   Can be overridden. Mean-squared error (quadratic cost) by default
+   """
    def cost(self, x, y):
       # For debugging
       a = self.feed(x)
-      print("Actual output: " + repr(np.round(a)))
-      print("Desired output: " + repr(y) + "\n")
       err = .5 * np.linalg.norm(a - y) ** 2
-      print("Cost of single input: " + str(err))
       return err
 
    """
-   The derivative (gradient) of the cost with respect to the activated output layer neurons
+   The derivative (gradient) of the cost with respect to the activated output layer neurons.
    """
    def cost_deriv(self, x, y):
       return self.feed(x) - y
 
-   def print_output(self, item):
-      if np.array_equal(np.round(self.layers[-1]), item[1]):
-         self.success_count += 1
-      self.item_count += 1
-      print("Correct: %d\tTotal: %d\tCorrect/Total: %.3f" % (self.success_count, self.item_count, self.success_count / self.item_count))
+   def print_output(self, desired_outputs):
+      batch_size = len(desired_outputs)
+      print("Act: " + repr(np.round(self.layers[-1][-1])) + "\nDes: " + repr(desired_outputs[-1]))
+      print("Cost/Batch: %.3f" % (1 / batch_size * np.linalg.norm(self.layers[-1] - desired_outputs) ** 2 / 2)) 
+
+
    """ 
-   For each weight matrix and bias vector in self.weights and self.biases,
-   compute the gradient of C with respect to the current weights and biases with
-   the given input and output in item. Item is a tuple of the input vector and 
-   the desired output vector.
+   inputs is a batch matrix containing input row vectors. Backprop feeds the inputs matrix to the network, preserving the layers, then computes
+   the gradient of the weights and biases 
    """
-   def backprop(self, item):
-      x, y = item
+   def backprop(self, x, y):
       dw, db = self._init_deltas()
-      self.feed(x, training = True)
-      delta_l = (self.layers[-1] - y) * self.fp(self.layers[-1])
+      self.layers[0] = x
+      for i in range(self.layer_count - 1):
+         self.layers[i + 1] = self.f[i](np.dot(self.layers[i], self.weights[i]) + self.biases[i])
+
+      delta_l = (self.layers[-1] - y) * self.fp[-1](self.layers[-1])
       for i in range(self.layer_count - 2, -1, -1):
-         dw[i] = np.array([self.layers[i]]).T * delta_l
-         db[i] = delta_l
-         delta_l = np.dot(delta_l, self.weights[i].T) * self.fp(self.layers[i])
+         dw[i] = sum((np.array([self.layers[i]]).T * delta_l).swapaxes(0, 1))
+         #dw[i] = sum(np.array([np.array([self.layers[i][j]]).T * delta_l[j] for j in range(len(delta_l))]))
+         db[i] = sum(delta_l)
+         delta_l = np.dot(delta_l, self.weights[i].T) * self.fp[i](self.layers[i])
       return dw, db 
 
    """
@@ -149,10 +154,11 @@ class NeuralNetwork:
    def _get_batches(self, data, batch_size):
       zipped = list(zip(*data))
       np.random.shuffle(zipped)
+      inputs, outputs = zip(*zipped)
       n = len(zipped)
-      batches = [zipped[i : i + batch_size] for i in range(0, n, batch_size)]
-      return batches
-
+      input_batches = [np.array(inputs[i : i + batch_size]) for i in range(0, n, batch_size)]
+      output_batches = [np.array(outputs[i : i + batch_size]) for i in range(0, n, batch_size)]
+      return input_batches, output_batches
 
    def _generate_filename(self):
       time_struct = time.localtime()

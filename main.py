@@ -1,3 +1,4 @@
+from activ_functions import *
 import numpy as np
 import sys
 np.set_printoptions(linewidth=200)
@@ -5,13 +6,14 @@ from extract import *
 from neural_network import NeuralNetwork
 
 ### Hyperparameters
-epochs = 10
+epochs = 5
 batch_size = 48
-eta = 1
-architecture = [784, 80, 50, 10]
+eta = .2
+architecture = [784, 300, 10]
+activations = ["sigmoid"]
 
 # Use fixed random seed FOR TESTING
-#np.random.seed(1)
+np.random.seed(1)
 
 # test weights
 wb_test_filename = "test_wb.json"
@@ -24,7 +26,7 @@ testing_image_filename = "t10k-images-idx3-ubyte"
 testing_labels_filename = "t10k-labels-idx1-ubyte"
 
 # Create a neural network to read the image inputs from 
-test_network = NeuralNetwork(architecture)
+test_network = NeuralNetwork(architecture, activations)
 
 if(len(sys.argv) == 1):
 
