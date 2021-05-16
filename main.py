@@ -6,11 +6,12 @@ from extract import *
 from neural_network import NeuralNetwork
 
 ### Hyperparameters
-epochs = 5
+epochs = 10
 batch_size = 200
-eta = 8
+eta = 1.2
+decay = .00024
 architecture = [784, 300, 10]
-activations = ["sigmoid", "softargmax"]
+activations = ["sigmoid"]
 
 # Use fixed random seed FOR TESTING
 #np.random.seed(1)
@@ -35,7 +36,7 @@ if(len(sys.argv) == 1):
    training_labels = get_labels(directory + training_labels_filename)
 
    # Training the network
-   test_network.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True)
+   test_network.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True, decay = decay)
 if(len(sys.argv) == 2):
    # GET THE TESTING IMAGE DATA AND LABELS
    wb_test_filename = sys.argv[1]
@@ -46,7 +47,7 @@ if(len(sys.argv) == 2):
    test_network.set_wb(wb_test_filename)
 
    # Test the data
-   print(test_network.test([testing_images, testing_labels], batch_size = 1, cost_threshold = .3, iterations = 50))
+   print(test_network.test([testing_images, testing_labels], iterations = "all"))
 
 # hello
 # 1

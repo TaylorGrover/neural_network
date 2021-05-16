@@ -49,15 +49,20 @@ class NeuralNetwork:
          current_layer = self.f[i](np.dot(current_layer, self.weights[i]) + self.biases[i])
       return current_layer
 
-   def test(self, data, cost_threshold, iterations):
+   def test(self, data, iterations = "all"):
       total_correct = 0
       inputs, outputs = data
+      if iterations == "all":
+         iterations = len(inputs)
       for i, (x, y) in enumerate(zip(inputs, outputs)):
          if i >= iterations:
             break
-         if self.cost(x, y) <= cost_threshold:
+         classification = np.round(self.feed(x))
+         if np.array_equal(classification, y):
             total_correct += 1
-      return total_correct / len(data)
+         if i % 20 == 0:
+            print("Act: " + repr(classification) + "\nDes: " + repr(y), end="\n\n")
+      return total_correct / i
 
    def _get_activations(self, activations):
       self.f = []
@@ -78,18 +83,21 @@ class NeuralNetwork:
          self.fp.append(sigmoid_deriv)
 
    # x, y = data, where x is training inputs and y is the set of corresponding desired outputs. 
-   def train(self, data, epochs = 1, batch_size = 48, eta = 1, show_stats = False):
+   def train(self, data, epochs = 1, batch_size = 48, eta = 1, show_stats = False, decay = .001):
       self.delta_w, self.delta_b = self._init_deltas()
-      self.item_count = 0
-      self.success_count = 0
+      total_batches = 0
       for i in range(epochs):
          print("Epoch: %d" % (i + 1))
          batches = self._get_batches(data, batch_size)
          for item_input, desired_output in zip(*batches):
             self.delta_w, self.delta_b = self.backprop(item_input, desired_output)
             self._update_wb(eta, len(item_input))
+            total_batches += 1
+            eta *= (1 - decay * sigmoid(total_batches))
+            if eta == 0:
+               break
             if show_stats:
-               self.print_output(desired_output)
+               self.print_output(desired_output, eta)
 
       # Save weights and biases after training
       self.save_wb(self._generate_filename())
@@ -109,10 +117,10 @@ class NeuralNetwork:
    def cost_deriv(self, x, y):
       return self.feed(x) - y
 
-   def print_output(self, desired_outputs):
+   def print_output(self, desired_outputs, eta):
       batch_size = len(desired_outputs)
       print("Act: " + repr(np.round(self.layers[-1][-1])) + "\nDes: " + repr(desired_outputs[-1]))
-      print("Cost/Batch: %.3f" % (1 / batch_size * np.linalg.norm(self.layers[-1] - desired_outputs) ** 2 / 2)) 
+      print("Cost/Batch: %.3f\tEta: %.3f" % (1 / batch_size * np.linalg.norm(self.layers[-1] - desired_outputs) ** 2 / 2, eta)) 
 
 
    """ 
