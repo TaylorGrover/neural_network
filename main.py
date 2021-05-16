@@ -7,13 +7,13 @@ from neural_network import NeuralNetwork
 
 ### Hyperparameters
 epochs = 5
-batch_size = 48
-eta = .2
+batch_size = 200
+eta = 8
 architecture = [784, 300, 10]
-activations = ["sigmoid"]
+activations = ["sigmoid", "softargmax"]
 
 # Use fixed random seed FOR TESTING
-np.random.seed(1)
+#np.random.seed(1)
 
 # test weights
 wb_test_filename = "test_wb.json"

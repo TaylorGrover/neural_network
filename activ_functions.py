@@ -6,6 +6,8 @@ Contains most of the activation functions and their derivatives
 def relu(z):
    return z * (z > 0)
 def relu_deriv(y):
+   if y == 0:
+      return .5
    return y > 0
 
 def sigmoid(z):

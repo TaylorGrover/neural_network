@@ -16,6 +16,7 @@ class NeuralNetwork:
       else:
          self.randomize()
       self.layers = [[] for i in range(self.layer_count)]
+      self.zlayers = [[] for i in range(self.layer_count)]
       self._get_activations(activations)
 
    # Reads the saved weights and biases from a file
@@ -77,21 +78,19 @@ class NeuralNetwork:
          self.fp.append(sigmoid_deriv)
 
    # x, y = data, where x is training inputs and y is the set of corresponding desired outputs. 
-   # datum
-   def train(self, data, epochs = 1, batch_size = 48, eta = .001, show_stats = False):
+   def train(self, data, epochs = 1, batch_size = 48, eta = 1, show_stats = False):
       self.delta_w, self.delta_b = self._init_deltas()
       self.item_count = 0
       self.success_count = 0
       for i in range(epochs):
-         print("Epoch: %d" % i)
+         print("Epoch: %d" % (i + 1))
          batches = self._get_batches(data, batch_size)
          for item_input, desired_output in zip(*batches):
             self.delta_w, self.delta_b = self.backprop(item_input, desired_output)
-            #self.delta_w = [w + wn for w, wn in zip(self.delta_w, dw)]
-            #self.delta_b = [b + bn for b, bn in zip(self.delta_b, db)]
             self._update_wb(eta, len(item_input))
             if show_stats:
                self.print_output(desired_output)
+
       # Save weights and biases after training
       self.save_wb(self._generate_filename())
 
@@ -118,13 +117,16 @@ class NeuralNetwork:
 
    """ 
    inputs is a batch matrix containing input row vectors. Backprop feeds the inputs matrix to the network, preserving the layers, then computes
-   the gradient of the weights and biases 
+   the gradient of the weights and biases. When computing the derivative of the activation functions with respect to the z term (weighted sum + bias),
+   save the weighted sums in addition to the activated layers (will have to choose one or the other later)
    """
    def backprop(self, x, y):
       dw, db = self._init_deltas()
       self.layers[0] = x
+      self.zlayers[0] = x
       for i in range(self.layer_count - 1):
-         self.layers[i + 1] = self.f[i](np.dot(self.layers[i], self.weights[i]) + self.biases[i])
+         self.zlayers[i + 1] = np.dot(self.layers[i], self.weights[i]) + self.biases[i]
+         self.layers[i + 1] = self.f[i](self.zlayers[i + 1])
 
       delta_l = (self.layers[-1] - y) * self.fp[-1](self.layers[-1])
       for i in range(self.layer_count - 2, -1, -1):
