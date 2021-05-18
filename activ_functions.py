@@ -17,5 +17,6 @@ def sigmoid_deriv(y):
    return y * (1 - y)
 
 def softargmax(z):
+   z = z - np.max(z, 1)[np.newaxis].T
    exponentials = np.exp(z)
-   return exponentials / sum(exponentials)
+   return exponentials / np.sum(exponentials, 1)[np.newaxis].T

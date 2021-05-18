@@ -8,9 +8,9 @@ from neural_network import NeuralNetwork
 ### Hyperparameters
 epochs = 10
 batch_size = 200
-eta = 1.2
-decay = .00024
-architecture = [784, 300, 10]
+eta = .3
+decay = .000004
+architecture = [784, 15, 10]
 activations = ["sigmoid"]
 
 # Use fixed random seed FOR TESTING
@@ -29,25 +29,30 @@ testing_labels_filename = "t10k-labels-idx1-ubyte"
 # Create a neural network to read the image inputs from 
 test_network = NeuralNetwork(architecture, activations)
 
+# GET THE IMAGE DATA AND LABELS
+training_images = get_images_array(directory + training_image_filename)
+training_labels = get_labels(directory + training_labels_filename)
+
 if(len(sys.argv) == 1):
-
-   # GET THE IMAGE DATA AND LABELS
-   training_images = get_images_array(directory + training_image_filename)
-   training_labels = get_labels(directory + training_labels_filename)
-
-   # Training the network
+   # Training the network from scratch
    test_network.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True, decay = decay)
-if(len(sys.argv) == 2):
-   # GET THE TESTING IMAGE DATA AND LABELS
-   wb_test_filename = sys.argv[1]
-   testing_images = get_images_array(directory + testing_image_filename)
-   testing_labels = get_labels(directory + testing_labels_filename)
 
-   # Set the weights and biases from trained wb json file
-   test_network.set_wb(wb_test_filename)
+if(len(sys.argv) == 3):
+
+   wb_filename = sys.argv[1]
+   test_network.set_wb(wb_filename)
+
+   if sys.argv[2] == "test":
+      # GET THE TESTING IMAGE DATA AND LABELS
+      testing_images = get_images_array(directory + testing_image_filename)
+      testing_labels = get_labels(directory + testing_labels_filename)
+      print(test_network.test([testing_images, testing_labels], iterations = "all"))
+
+   # Training the network with starting weights
+   if sys.argv[2] == "train":
+      test_network.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True, decay = decay)
 
    # Test the data
-   print(test_network.test([testing_images, testing_labels], iterations = "all"))
 
 # hello
 # 1

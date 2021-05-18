@@ -29,6 +29,9 @@ class NeuralNetwork:
       self.layer_count = len(self.layer_heights)
       self.weights = weights
       self.biases = biases
+      for i in range(self.layer_count - 1):
+         self.weights[i] = np.array(self.weights[i])
+         self.biases[i] = np.array(self.biases[i])
 
    # gives the weight and bias a value, if no wb_filename provided
    def randomize(self):
@@ -85,6 +88,7 @@ class NeuralNetwork:
    # x, y = data, where x is training inputs and y is the set of corresponding desired outputs. 
    def train(self, data, epochs = 1, batch_size = 48, eta = 1, show_stats = False, decay = .001):
       self.delta_w, self.delta_b = self._init_deltas()
+      eta_0 = eta
       total_batches = 0
       for i in range(epochs):
          print("Epoch: %d" % (i + 1))
@@ -93,7 +97,8 @@ class NeuralNetwork:
             self.delta_w, self.delta_b = self.backprop(item_input, desired_output)
             self._update_wb(eta, len(item_input))
             total_batches += 1
-            eta *= (1 - decay * sigmoid(total_batches))
+            #eta *= (1 - decay * sigmoid(total_batches))
+            eta = eta_0 / (1 + decay * total_batches)
             if eta == 0:
                break
             if show_stats:
@@ -120,7 +125,7 @@ class NeuralNetwork:
    def print_output(self, desired_outputs, eta):
       batch_size = len(desired_outputs)
       print("Act: " + repr(np.round(self.layers[-1][-1])) + "\nDes: " + repr(desired_outputs[-1]))
-      print("Cost/Batch: %.3f\tEta: %.3f" % (1 / batch_size * np.linalg.norm(self.layers[-1] - desired_outputs) ** 2 / 2, eta)) 
+      print("Cost/Batch: %.10f\tEta: %.10f" % (1 / batch_size * np.linalg.norm(self.layers[-1] - desired_outputs) ** 2 / 2, eta)) 
 
 
    """ 
@@ -138,7 +143,7 @@ class NeuralNetwork:
 
       delta_l = (self.layers[-1] - y) * self.fp[-1](self.layers[-1])
       for i in range(self.layer_count - 2, -1, -1):
-         dw[i] = sum((np.array([self.layers[i]]).T * delta_l).swapaxes(0, 1))
+         dw[i] = sum((self.layers[i][np.newaxis].T * delta_l).swapaxes(0, 1))
          #dw[i] = sum(np.array([np.array([self.layers[i][j]]).T * delta_l[j] for j in range(len(delta_l))]))
          db[i] = sum(delta_l)
          delta_l = np.dot(delta_l, self.weights[i].T) * self.fp[i](self.layers[i])
