@@ -1,4 +1,4 @@
-from activ_functions import *
+from functions import *
 import numpy as np
 import sys
 np.set_printoptions(linewidth=200)
@@ -6,11 +6,11 @@ from extract import *
 from neural_network import NeuralNetwork
 
 ### Hyperparameters
-epochs = 10
-batch_size = 200
-eta = .3
-decay = .000004
-architecture = [784, 15, 10]
+epochs = 20
+batch_size = 10
+eta = .5
+decay = .0000000007
+architecture = [784, 30, 10]
 activations = ["sigmoid"]
 
 # Use fixed random seed FOR TESTING
@@ -27,32 +27,27 @@ testing_image_filename = "t10k-images-idx3-ubyte"
 testing_labels_filename = "t10k-labels-idx1-ubyte"
 
 # Create a neural network to read the image inputs from 
-test_network = NeuralNetwork(architecture, activations)
+nn = NeuralNetwork(architecture, activations)
+nn.cost = cross_entropy
+nn.cost_deriv = cross_entropy_deriv
 
-# GET THE IMAGE DATA AND LABELS
-training_images = get_images_array(directory + training_image_filename)
-training_labels = get_labels(directory + training_labels_filename)
+# Get the image data for both training and validation
+training_images, training_labels, validation_images, validation_labels \
+   = get_training_and_validation(directory + training_image_filename, directory + training_labels_filename)
 
-if(len(sys.argv) == 1):
-   # Training the network from scratch
-   test_network.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True, decay = decay)
+# Get the testing image data and labels
+testing_images = get_images_array(directory + testing_image_filename)
+testing_labels = get_labels(directory + testing_labels_filename)
 
-if(len(sys.argv) == 3):
-
+if len(sys.argv) == 3:
    wb_filename = sys.argv[1]
-   test_network.set_wb(wb_filename)
-
+   nn.set_wb(wb_filename)
    if sys.argv[2] == "test":
-      # GET THE TESTING IMAGE DATA AND LABELS
-      testing_images = get_images_array(directory + testing_image_filename)
-      testing_labels = get_labels(directory + testing_labels_filename)
-      print(test_network.test([testing_images, testing_labels], iterations = "all"))
+      print(nn.test([testing_images, testing_labels], iterations = "all"))
 
-   # Training the network with starting weights
-   if sys.argv[2] == "train":
-      test_network.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True, decay = decay)
-
-   # Test the data
+# Training the network with starting weights
+if len(sys.argv) == 1 or sys.argv[2] == "train":
+   nn.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True)
 
 # hello
 # 1

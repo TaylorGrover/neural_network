@@ -1,5 +1,8 @@
-from activ_functions import *
+from functions import *
 import json
+import matplotlib as mpl
+mpl.use("TkAgg")
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -7,26 +10,24 @@ import time
 
 # wb_filename is a JSON file containing the weights and biases
 class NeuralNetwork:
-   def __init__(self, layer_heights = [], activations = [], wb_filename = ""):
-      self.layer_heights = layer_heights
-      self.layer_count = len(self.layer_heights)
+   def __init__(self, architecture = [], activations = [], wb_filename = ""):
+      self.architecture = architecture
+      self.layer_count = len(self.architecture)
       self.wb_filename = wb_filename
       if(os.path.isfile(self.wb_filename)):
          self.set_wb(self.wb_filename)
       else:
          self.randomize()
       self.layers = [[] for i in range(self.layer_count)]
-      self.zlayers = [[] for i in range(self.layer_count)]
       self._get_activations(activations)
 
    # Reads the saved weights and biases from a file
    def set_wb(self, filename):
       with open(filename, "r") as f:
          weights, biases = json.load(f)
-      layer_heights = [len(weights[i]) for i in range(len(weights))]
-      layer_heights.append(biases[-1])
-      self.layer_heights = layer_heights
-      self.layer_count = len(self.layer_heights)
+      self.architecture = [len(weights[i]) for i in range(len(weights))]
+      self.architecture.append(len(biases[-1]))
+      self.layer_count = len(self.architecture)
       self.weights = weights
       self.biases = biases
       for i in range(self.layer_count - 1):
@@ -38,8 +39,11 @@ class NeuralNetwork:
       w = []
       b = []
       for i in range(self.layer_count - 1):
-         w.append(2 * np.random.random((self.layer_heights[i], self.layer_heights[i + 1])) - 1)
-         b.append(2 * np.random.random(self.layer_heights[i + 1]) - 1)
+         #w.append(2 * np.random.random((self.architecture[i], self.architecture[i + 1])) - 1)
+         #b.append(2 * np.random.random(self.architecture[i + 1]) - 1)
+         w.append(np.random.randn(self.architecture[i], self.architecture[i + 1]) / np.sqrt(self.architecture[0]))
+         #b.append(np.random.randn(self.architecture[i + 1]))
+         b.append(np.zeros(self.architecture[i + 1]))
       self.weights = w
       self.biases = b
 
@@ -85,47 +89,68 @@ class NeuralNetwork:
          self.f.append(sigmoid)
          self.fp.append(sigmoid_deriv)
 
-   # x, y = data, where x is training inputs and y is the set of corresponding desired outputs. 
-   def train(self, data, epochs = 1, batch_size = 48, eta = 1, show_stats = False, decay = .001):
+   """
+   data has the format (training_images, training_labels)
+   epochs is 1 by default
+   batch_size: number of images and labels per training iteration
+   eta: the learning rate; can be adjusted over time
+   save_wb: whether the weights and biases should be preserved in a json file
+   show_stats: save the cost into an array, show the cost of each batch, then display a plot of the cost over time (number of batches)
+   """
+   def train(self, data, epochs = 1, batch_size = 10, eta = 1, save_wb = True, show_stats = False): 
       self.delta_w, self.delta_b = self._init_deltas()
+      self.correct = 0
       eta_0 = eta
-      total_batches = 0
+      current_batch = 0
+      self.costs = [0 for i in range(epochs * int(len(data[0]) / batch_size))]
       for i in range(epochs):
          print("Epoch: %d" % (i + 1))
+         #eta = eta_0 * (.5) ** i
          batches = self._get_batches(data, batch_size)
          for item_input, desired_output in zip(*batches):
             self.delta_w, self.delta_b = self.backprop(item_input, desired_output)
             self._update_wb(eta, len(item_input))
-            total_batches += 1
-            #eta *= (1 - decay * sigmoid(total_batches))
-            eta = eta_0 / (1 + decay * total_batches)
+            current_batch += 1
             if eta == 0:
                break
             if show_stats:
-               self.print_output(desired_output, eta)
+               self.costs[current_batch - 1] = self.cost(self.layers[-1], desired_output)
+               self.print_output(desired_output, eta, current_batch - 1)
 
-      # Save weights and biases after training
-      self.save_wb(self._generate_filename())
+      # Save weights and biases after training. If show_stats, then display a graph of the cost over time
+      if save_wb:
+         filename = self._generate_filename()
+         self.save_wb(filename)
+         if show_stats:
+            self.plot_cost(filename)
+
+   def plot_cost(self, filename):
+      plt.ion()
+      fig, ax = plt.subplots()
+      ax.plot(np.arange(0, len(self.costs), 1), self.costs)
+      fig.savefig(filename.replace("json", "png"))
 
    """
-   Can be overridden. Mean-squared error (quadratic cost) by default
+   Can be overridden. Mean-squared error (quadratic cost) by default. 
+   Takes actual output and desired output then returns the cost
    """
-   def cost(self, x, y):
-      # For debugging
-      a = self.feed(x)
-      err = .5 * np.linalg.norm(a - y) ** 2
+   def cost(self, a, y):
+      err = .5 * np.linalg.norm(np.sum(a - y, 0)) ** 2 / len(a)
       return err
 
    """
-   The derivative (gradient) of the cost with respect to the activated output layer neurons.
+   The derivative (gradient) of the cost with respect to the activated output layer neurons. 
+   Takes desired and actual outputs as params. 
    """
-   def cost_deriv(self, x, y):
-      return self.feed(x) - y
+   def cost_deriv(self, a, y):
+      return a - y
 
-   def print_output(self, desired_outputs, eta):
+   def print_output(self, desired_outputs, eta, index):
       batch_size = len(desired_outputs)
-      print("Act: " + repr(np.round(self.layers[-1][-1])) + "\nDes: " + repr(desired_outputs[-1]))
-      print("Cost/Batch: %.10f\tEta: %.10f" % (1 / batch_size * np.linalg.norm(self.layers[-1] - desired_outputs) ** 2 / 2, eta)) 
+      diff = np.sum(np.abs(np.round(self.layers[-1]) - desired_outputs), 1)
+      incorrect = np.sum(diff * (diff > 0))
+      self.correct += batch_size - incorrect
+      print("Cost/Batch: %.10f\tEta: %.10f\tAccuracy: %.10f" % (self.costs[index], eta, self.correct / (batch_size * (index + 1))))
 
 
    """ 
@@ -136,16 +161,14 @@ class NeuralNetwork:
    def backprop(self, x, y):
       dw, db = self._init_deltas()
       self.layers[0] = x
-      self.zlayers[0] = x
       for i in range(self.layer_count - 1):
-         self.zlayers[i + 1] = np.dot(self.layers[i], self.weights[i]) + self.biases[i]
-         self.layers[i + 1] = self.f[i](self.zlayers[i + 1])
+         self.layers[i + 1] = self.f[i](np.dot(self.layers[i], self.weights[i]) + self.biases[i])
 
-      delta_l = (self.layers[-1] - y) * self.fp[-1](self.layers[-1])
+      delta_l = self.cost_deriv(self.layers[-1], y) * self.fp[-1](self.layers[-1])
       for i in range(self.layer_count - 2, -1, -1):
-         dw[i] = sum((self.layers[i][np.newaxis].T * delta_l).swapaxes(0, 1))
+         dw[i] = np.sum((self.layers[i][np.newaxis].T * delta_l).swapaxes(0, 1), 0)
          #dw[i] = sum(np.array([np.array([self.layers[i][j]]).T * delta_l[j] for j in range(len(delta_l))]))
-         db[i] = sum(delta_l)
+         db[i] = np.sum(delta_l, 0)
          delta_l = np.dot(delta_l, self.weights[i].T) * self.fp[i](self.layers[i])
       return dw, db 
 
