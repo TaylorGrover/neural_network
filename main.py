@@ -6,12 +6,12 @@ from extract import *
 from neural_network import NeuralNetwork
 
 ### Hyperparameters
-epochs = 20
+epochs = 2
 batch_size = 10
-eta = .5
-decay = .0000000007
-architecture = [784, 30, 10]
-activations = ["sigmoid"]
+eta = .3
+decay = 0.0
+architecture = [784, 80, 10]
+activations = ["sigmoid", "softmax"]
 
 # Use fixed random seed FOR TESTING
 #np.random.seed(1)
@@ -26,7 +26,9 @@ training_labels_filename = "train-labels-idx1-ubyte"
 testing_image_filename = "t10k-images-idx3-ubyte"
 testing_labels_filename = "t10k-labels-idx1-ubyte"
 
-# Create a neural network to read the image inputs from 
+""" Create a neural network to read the image inputs from. Choose the appropriate cost function 
+   and cost gradient (with respect to the output layer). MSE is the default cost implementation
+"""
 nn = NeuralNetwork(architecture, activations)
 nn.cost = cross_entropy
 nn.cost_deriv = cross_entropy_deriv
@@ -47,11 +49,5 @@ if len(sys.argv) == 3:
 
 # Training the network with starting weights
 if len(sys.argv) == 1 or sys.argv[2] == "train":
-   nn.train([training_images, training_labels], batch_size = batch_size, epochs = epochs, eta = eta, show_stats = True)
-
-# hello
-# 1
-# 2 
-# 3
-# 4
-# 5, last neuron
+   nn.train([training_images, training_labels, validation_images, validation_labels, testing_images, testing_labels], \
+       batch_size = batch_size, epochs = epochs, eta = eta, decay = decay, show_cost = True, test_validation=True)
