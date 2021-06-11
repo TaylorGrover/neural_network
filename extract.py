@@ -7,6 +7,13 @@ import numpy as np
 import os
 from PIL import Image
 
+# Image training data files
+directory = "data/"
+training_image_filename = "train-images-idx3-ubyte"
+training_labels_filename = "train-labels-idx1-ubyte"
+testing_image_filename = "t10k-images-idx3-ubyte"
+testing_labels_filename = "t10k-labels-idx1-ubyte"
+
 # Big Endian byte storage conversion from bytecode to decimal integer 
 ### Obsolete since int.from_bytes(bytes, byteorder = "big", signed = False) 
   # does the same thing
@@ -30,16 +37,22 @@ def get_images_array(image_filename):
         images.append(np.array(bytearray(image_bytes[16 + i * rows * cols : 16 + rows * cols * (i + 1)])) / 255) 
     return images
 
-def get_training_and_validation(image_filename, label_filename):
-    images = get_images_array(image_filename)
-    labels = get_labels(label_filename)
-    training_images = images[0 : 50000] 
-    training_labels = labels[0 : 50000]
-    validation_images = images[50000 : 60000]
-    validation_labels = labels[50000 : 60000]
+"""
+Determine how to split the training and validation images 
+"""
+def get_training_and_validation(training_count = 50000):
+    if 0 >= training_count or training_count >= 60000:
+        raise ValueError("Training image count must be between 0 and 60000.")
+    images = get_images_array(directory + training_image_filename)
+    labels = get_labels(directory + training_labels_filename)
+    training_images = images[0 : training_count] 
+    training_labels = labels[0 : training_count]
+    validation_images = images[training_count : 60000]
+    validation_labels = labels[training_count : 60000]
     return training_images, training_labels, validation_images, validation_labels
 
-
+def get_testing_images():
+    return get_images_array(directory + testing_image_filename), get_labels(directory + testing_labels_filename)
 
 # Get the labels corresponding to the images 
 def get_labels(label_filename):
