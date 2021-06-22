@@ -4,7 +4,7 @@ import matplotlib as mpl
 mpl.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
-np.seterr(all="raise")
+#np.seterr(all="raise")
 import os
 import sys
 import time
@@ -65,10 +65,12 @@ class NeuralNetwork:
    def _init_booleans(self):
       self.save_wb = True
       self.show_cost = True
+      self.show_gradient = False
       self.test_validation = True
+      self.use_clipping = False
       self.use_diff_eq = True
       self.use_dropout = False
-      self.use_L2 = False
+      #self.use_L2 = False
 
    def set_diff_eq(self, boolean):
       self.use_diff_eq = boolean
@@ -135,9 +137,13 @@ class NeuralNetwork:
    eta: the learning rate; can be adjusted over time
    save_wb: whether the weights and biases should be preserved in a json file
    show_cost: save the cost into an array, show the cost of each batch, then display a plot of the cost over time (number of batches)
+   decay: L2 regularization decay rate
+   clip_threshold: threshold value to use for gradient clipping
    After training is complete, if save_wb is true, obtain testing data classification accuracy, then save the weights and biases.
    """
-   def train(self, data, epochs = 1, batch_size = 10, eta = 1, decay = .01): 
+   def train(self, data, epochs = 1, batch_size = 10, eta = 1, decay = 0, clip_threshold = 0): 
+      if self.use_clipping and clip_threshold <= 0:
+         raise ValueError("Clip threshold should be greater than 0.")
       self.delta_w, self.delta_b = self._init_deltas()
       self.correct = 0
       self.validations = []
@@ -153,10 +159,11 @@ class NeuralNetwork:
          batches = self._get_batches([td, tl], batch_size)
          for item_input, desired_output in zip(*batches):
             self.delta_w, self.delta_b = self.backprop(item_input, desired_output)
-            self._update_wb(eta, len(item_input), 0)
+            self._update_wb(eta, decay, clip_threshold)
             current_batch += 1
             if self.show_cost:
                self.costs[current_batch - 1] = self.cost(self.layers[-1], desired_output)
+               #eta = 1 / self.costs[current_batch - 1] 
                self.print_output(desired_output, eta, current_batch - 1)
       # Save weights and biases after training. If show_cost, then display a graph of the cost over time
       if self.save_wb:
@@ -183,9 +190,8 @@ class NeuralNetwork:
       #delta_l = self.cost_deriv(self.layers[-1], y) * self.fp[-1](self.layers[-1])
       delta_l = self._get_output_delta(y)
       for i in range(self.layer_count - 2, -1, -1):
-         dw[i] = np.sum((self.layers[i][np.newaxis].T * delta_l).swapaxes(0, 1), 0)
-         db[i] = np.sum(delta_l, 0)
-         #print("i: %d\tArrays Equal: %s" % (i, str(np.array_equal(self.zs[i], self.layers[i]))))
+         dw[i] = np.average((self.layers[i][np.newaxis].T * delta_l).swapaxes(0, 1), 0)
+         db[i] = np.average(delta_l, 0)
          if self.use_diff_eq:
             delta_l = np.dot(delta_l, self.weights[i].T) * self.fp[i](self.layers[i])
          else:
@@ -195,17 +201,26 @@ class NeuralNetwork:
    def _get_output_delta(self, y):
       if self.cost == cross_entropy and (self.f[-1] == sigmoid or self.f[-1] == softargmax):
          return self.layers[-1] - y
-      return self.cost_deriv(self.layers[-1], y) * self.fp[-1](self.layers[-1])
+      if self.use_diff_eq:
+         return self.cost_deriv(self.layers[-1], y) * self.fp[-1](self.layers[-1])
+      else:
+         return self.cost_deriv(self.layers[-1], y) * self.fp[-1](self.zs[-1])
 
    """
    Update weights and biases with self.delta_w and self.delta_b at the end of each batch
    """
-   def _update_wb(self, eta, batch_size, decay):
+   def _update_wb(self, eta, decay, clip_threshold):
       for i in range(self.layer_count - 1):
          #print("i: %d\tMax: %.2f\tMin: %.2f\tAvg: %.2f\tMedian: %.2f\tStddev: %.2f\tShape: %s" % (i, np.max(self.delta_w[i]), np.min(self.delta_w[i]), np.average(self.delta_w[i]), np.median(self.delta_w[i]), np.std(self.delta_w[i]), repr(self.delta_w[i].shape)))
-         if np.max(self.delta_w[i]) < 3 and np.abs(np.min(self.delta_w[i])) < 3:
-            self.weights[i] = (1 - eta * decay / batch_size) * self.weights[i] - eta * self.delta_w[i] / batch_size
-            self.biases[i] -= eta * self.delta_b[i] / batch_size
+         #if np.max(self.delta_w[i]) < 3 and np.abs(np.min(self.delta_w[i])) < 3:
+         if self.use_clipping:
+            norm = np.linalg.norm(self.delta_w[i])
+            if norm >= clip_threshold or norm <= 1e-7:
+               self.delta_w[i] /= (norm / clip_threshold)
+         self.weights[i] = (1 - eta * decay) * self.weights[i] - eta * self.delta_w[i]
+         if self.show_gradient:
+            print("Layer: %d\tAvg: %.5f\tMax: %.5f\tMin: %.5f\tStddev: %.5f" % (i + 1, np.average(self.delta_w[i]), np.max(self.delta_w[i]), np.min(self.delta_w[i]), np.std(self.delta_w[i])))
+         self.biases[i] -= eta * self.delta_b[i]
 
    """
    Display and save a plot of the cost of the training data over the total number of batches.

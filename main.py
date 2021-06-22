@@ -6,25 +6,30 @@ from extract import *
 from neural_network import NeuralNetwork
 
 ### Hyperparameters
-epochs = 20
+epochs = 3
 batch_size = 10
+clip_threshold = .01
 eta = .3
-decay = 1
-architecture = [784, 10, 10]
+decay = 0
+architecture = [784, 20, 10]
 activations = ["sigmoid", "softargmax"]
 
 # Use fixed random seed FOR TESTING
 np.random.seed(1)
 
 """ Create a neural network to read the image inputs from. Choose the appropriate cost function 
-   and cost gradient (with respect to the output layer). MSE is the default cost implementation
+   and cost gradient (with respect to the output layer). MSE is the default cost function implementation
 """
 nn = NeuralNetwork(architecture, activations)
 nn.cost = cross_entropy
 nn.cost_deriv = cross_entropy_deriv
 nn.test_validation = False
+nn.use_clipping = False
+nn.use_dropout = False
+nn.use_L2 = False
+nn.show_gradient = False
 nn.save_wb = False
-#nn.use_diff_eq = False
+nn.use_diff_eq = False
 
 # Get the image data for both training and validation
 training_images, training_labels, validation_images, validation_labels = get_training_and_validation()
@@ -41,4 +46,4 @@ if len(sys.argv) == 3:
 # Training the network with starting weights
 if len(sys.argv) == 1 or sys.argv[2] == "train":
    nn.train([training_images, training_labels, validation_images, validation_labels, testing_images, testing_labels], \
-       batch_size = batch_size, epochs = epochs, eta = eta, decay = decay)
+       batch_size = batch_size, clip_threshold = clip_threshold, decay = decay, epochs = epochs, eta = eta)

@@ -71,6 +71,11 @@ def softargmax_deriv(z):
    activation = softargmax(z)
    return activation * (1 - activation)
 
+def softplus(z):
+   return np.log(1 + np.exp(z))
+def softplus_diff(y):
+   return 1 - np.exp(-y)
+
 # Can take a batch of inputs and outputs and compute the cost 
 def cross_entropy(a, y):
    return -np.sum(np.sum(y * np.log(a) + (1 - y) * np.log(1 - a), 0), 0) / len(a)
@@ -91,7 +96,7 @@ Dictionary of activation functions
 """
 activations_diff_dict = {"relu" : (relu, relu_diff), "nrelu" : (normalized_relu, normalized_relu_diff), \
    "sigmoid" : (sigmoid, sigmoid_diff), "tanh" : (np.tanh, tanh_diff), \
-   "softargmax" : (softargmax, sigmoid_diff), "identity" : (identity, identity_diff)}
+   "softargmax" : (softargmax, sigmoid_diff), "identity" : (identity, identity_diff), "softplus" : (softplus, softplus_diff)}
 
 activations_dict = {"relu" : (relu, relu_deriv), "lrelu" : (lrelu, lrelu_deriv), "nrelu" : (normalized_relu, normalized_relu_deriv), \
    "sigmoid" : (sigmoid, sigmoid_deriv), "tanh" : (np.tanh, tanh_deriv), "sinsquared" : (sin_squared, sin_squared_deriv), \
