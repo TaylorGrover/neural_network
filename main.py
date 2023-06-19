@@ -29,7 +29,7 @@ nn.use_dropout = False
 nn.use_L2 = False
 nn.show_gradient = False
 nn.save_wb = False
-nn.use_diff_eq = False
+nn.use_diff_eq = True
 
 # Get the image data for both training and validation
 training_images, training_labels, validation_images, validation_labels = get_training_and_validation()

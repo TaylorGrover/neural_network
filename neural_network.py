@@ -104,7 +104,7 @@ class NeuralNetwork:
          if np.array_equal(np.round(current_output), y):
             total_correct += 1
          if i % interval == 0 and show_outputs:
-            print("Act: " + repr(current_output) + "\nDes: " + repr(y), end="\n\n")
+            print("Act: " + repr(np.round(current_output)) + "\nDes: " + repr(y), end="\n\n")
       accuracy = total_correct / (i + 1)
       print("Accuracy: " + str(accuracy))
       return accuracy
