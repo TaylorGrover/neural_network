@@ -83,6 +83,13 @@ def cross_entropy(a, y):
 def cross_entropy_deriv(a, y):
    return (a - y) / (a * (1 - a))
 
+# MSE
+def MSE(a, y):
+    return .5 * np.linalg.norm(np.sum(a - y, 0)) ** 2 / len(a)
+
+def MSE_deriv(a, y):
+    return a - y
+
 # Log-likelihood cost
 def log_likelihood(a, y):
    return -np.sum(y.T.dot(np.log(a))) / len(a)
